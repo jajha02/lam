@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ล่ามส่วนตัว</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ล่ามส่วนตัว">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1d6272">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two facing panes (ต้นฉบับ | คำแปล) under a slim control bar; stack on phone. Notes sit under the translation. */
+:root{
+  --bg:#eef1f3; --panel:#ffffff; --ink:#18242b; --muted:#5b6a73; --line:#d6dde2;
+  --accent:#1d6272; --accent-ink:#ffffff; --accent-soft:#dcebee; --warn:#9a5b00;
+  --display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
+  --body:"IBM Plex Sans Thai","Leelawadee UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12181c; --panel:#1a2227; --ink:#e3eaee; --muted:#96a5ae; --line:#2c373e;
+  --accent:#5fb3c4; --accent-ink:#0e1a1e; --accent-soft:#1f3339; --warn:#e0a54a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12181c; --panel:#1a2227; --ink:#e3eaee; --muted:#96a5ae; --line:#2c373e;
+  --accent:#5fb3c4; --accent-ink:#0e1a1e; --accent-soft:#1f3339; --warn:#e0a54a; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px)}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:20px 40px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:600;font-size:1.6rem;margin:0;letter-spacing:.01em}
+h1 small{font-family:var(--body);font-weight:400;font-size:.85rem;color:var(--muted);margin-left:8px}
+.status{font-size:.8rem;color:var(--muted)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+select,input[type=text],textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px}
+select{padding:7px 10px;min-width:0}
+select:focus,textarea:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.langs{display:flex;align-items:center;gap:6px;flex:1 1 360px;min-width:0}
+.langs select{flex:1 1 0}
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.55;cursor:default}
+.swap{padding:7px 10px;font-family:var(--mono)}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:9px 20px}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.lbl{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.panes{grid-template-columns:1fr}}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-width:0}
+.pane-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pane-head b{font-family:var(--display);font-weight:600}
+textarea{width:100%;min-height:230px;resize:vertical;border:0;background:transparent;padding:14px;font-size:1.05rem;line-height:1.7;border-radius:0 0 10px 10px}
+.out{padding:14px;min-height:230px;font-size:1.05rem;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.out.placeholder{color:var(--muted)}
+.tag{font-size:.72rem;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:99px;font-weight:600}
+.tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tools button{padding:4px 10px;font-size:.85rem}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.count{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ctx{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ctx input{flex:1 1 280px;padding:8px 10px;min-width:0}
+.notes{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.notes h2{font-family:var(--display);font-size:1rem;font-weight:600;margin:0 0 6px}
+.notes ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.notes .detected{color:var(--muted);font-size:.85rem;margin-bottom:6px}
+.err{color:var(--warn);font-size:.9rem}
+.img-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--line);font-size:.85rem}
+.img-chip img{height:40px;border-radius:4px}
+.history{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.history h2{font-family:var(--display);font-size:1rem;font-weight:600;margin:0}
+.history-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.hist-list{display:flex;flex-direction:column;gap:6px}
+.hist{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;text-align:left;padding:8px 10px;width:100%}
+.hist .pair{font-family:var(--mono);font-size:.75rem;color:var(--accent);white-space:nowrap}
+.hist .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.empty{color:var(--muted);font-size:.9rem}
+.reading{border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.reading-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.reading-head b{font-family:var(--display);font-weight:600;font-size:.95rem}
+.rd{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 10px;background:var(--bg);border-radius:7px;min-width:0}
+.rd .k{font-family:var(--mono);font-size:.7rem;color:var(--muted);padding-top:.35em;letter-spacing:.04em}
+.rd .zh{font-size:1.2rem;line-height:1.6;overflow-wrap:anywhere}
+.rd .py{color:var(--accent);font-weight:500;overflow-wrap:anywhere}
+.rd .thr{overflow-wrap:anywhere}
+.chk{display:flex;align-items:center;gap:6px;font-size:.9rem;padding:0 4px;cursor:pointer}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.pane.drop{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.install{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.install summary{font-family:var(--display);font-weight:600;cursor:pointer}
+.install-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:10px}
+.install ol{margin:4px 0 0;padding-left:1.3em}
+.install p{margin:10px 0 0}
+@media (max-width:760px){
+  .wrap{padding-block:12px 90px}
+  .out-foot-go{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--panel);border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:flex-end;gap:8px}
+  .out-foot-go .primary{flex:1}
+  textarea,.out{min-height:160px}
+}
+.stop{display:none}
+.busy .stop{display:inline-block}
+@media (prefers-reduced-motion:no-preference){.thinking::after{content:"";animation:dots 1.2s steps(4) infinite}}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.settings{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.settings summary{font-family:var(--display);font-weight:600;cursor:pointer}
+.set-grid{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.set-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.set-row input{flex:1 1 260px;padding:8px 10px;min-width:0;font-family:var(--mono)}
+.set-row select{flex:1 1 260px}
+.hint{font-size:.85rem;color:var(--muted);margin:0}
+.hint a{color:var(--accent)}
+.warn{font-size:.85rem;color:var(--warn);margin:0}
+.spk{padding:2px 10px;font-size:.8rem;line-height:1.4;white-space:nowrap;flex-shrink:0}
+.rd .zh{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <header>
+    <h1>ล่ามส่วนตัว<small>แปลด้วย Gemini (ฟรี) · มีคำอ่านไทย · แปลจากรูปได้ · v6</small></h1>
+    <span class="status" id="status">กำลังเตรียม…</span>
+  </header>
+
+  <details class="settings" id="settings">
+    <summary>ตั้งค่า (คีย์ Gemini และรุ่นโมเดล)</summary>
+    <div class="set-grid">
+      <p class="hint">ขอคีย์ฟรีที่ <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> ด้วยบัญชี Google ส่วนตัว กด Create API key แล้วคัดลอกมาวางที่นี่ ทำครั้งเดียวต่อเครื่อง</p>
+      <div class="set-row">
+        <input type="password" id="apiKey" placeholder="วางคีย์ที่ขึ้นต้นด้วย AIza..." autocomplete="off" spellcheck="false">
+        <button type="button" id="saveKey" class="primary">บันทึกคีย์</button>
+      </div>
+      <div class="set-row">
+        <select id="model" aria-label="รุ่นโมเดล"><option value="">บันทึกคีย์ก่อน แล้วรายชื่อโมเดลจะขึ้นเอง</option></select>
+        <button type="button" id="reloadModels">โหลดรายชื่อใหม่</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="deepThink"> ให้คิดละเอียดก่อนแปล (แม่นขึ้นเล็กน้อยกับเอกสารยาก แต่ช้ากว่าหลายเท่า)</label>
+      <p class="hint" id="keyState">คีย์เก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น ไม่ได้ส่งไปที่อื่นนอกจาก Google</p>
+      <p class="warn">แบบฟรี Google อาจนำข้อความไปใช้ปรับปรุงบริการ อย่าใส่ข้อมูลลับของบริษัทหรือข้อมูลส่วนตัวลูกค้า</p>
+    </div>
+  </details>
+
+  <div class="bar">
+    <div class="langs">
+      <select id="src" aria-label="ภาษาต้นฉบับ"></select>
+      <button class="swap" id="swap" title="สลับภาษา" aria-label="สลับภาษา">⇄</button>
+      <select id="tgt" aria-label="ภาษาปลายทาง"></select>
+    </div>
+    <div class="opts">
+      <select id="speed" aria-label="ความเร็ว">
+        <option value="fast">⚡ เร็วที่สุด</option>
+        <option value="balanced">แม่นยำ</option>
+      </select>
+      <select id="tone" aria-label="โทนภาษา">
+        <option value="natural">โทน: เป็นธรรมชาติ</option>
+        <option value="formal">โทน: ทางการ</option>
+        <option value="business">โทน: อีเมล/ธุรกิจ</option>
+        <option value="casual">โทน: กันเอง</option>
+        <option value="literal">โทน: ตรงตัว (คำต่อคำ)</option>
+      </select>
+      <label class="chk" title="แปลให้เองหลังหยุดพิมพ์ประมาณ 1 วินาที"><input type="checkbox" id="live"> แปลทันทีขณะพิมพ์</label>
+      <label class="chk" id="readWrap" hidden><input type="checkbox" id="readOn" checked> <span id="readLbl">คำอ่านภาษาไทย</span></label>
+    </div>
+  </div>
+
+  <div class="ctx">
+    <span class="lbl">บริบท</span>
+    <input type="text" id="ctx" placeholder="ไม่บังคับ เช่น อีเมลถึงลูกค้าญี่ปุ่น, คู่มือตรวจร้านค้า, เมนูอาหาร">
+  </div>
+
+  <div class="panes">
+    <section class="pane">
+      <div class="pane-head">
+        <b>ต้นฉบับ</b>
+        <div class="tools">
+          <button type="button" id="camBtn">ถ่ายรูป</button>
+          <button type="button" id="imgBtn">เลือกรูป</button>
+          <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
+          <input type="file" id="imgFile" accept="image/*" hidden>
+          <button type="button" id="clear">ล้าง</button>
+        </div>
+      </div>
+      <textarea id="input" spellcheck="false">เรียนคุณทานากะ
+
+ขอบคุณที่สละเวลาประชุมเมื่อวานนะคะ ทางเราจะส่งใบเสนอราคาฉบับแก้ไขให้ภายในวันศุกร์นี้ หากมีข้อสงสัยเพิ่มเติม ติดต่อกลับได้ตลอดเลยค่ะ</textarea>
+      <div class="img-chip" id="imgChip" hidden><img id="imgPrev" alt="รูปที่เลือก"><span id="imgName"></span><button type="button" id="imgRemove">เอาออก</button></div>
+      <div class="foot">
+        <span class="count" id="count">0 ตัวอักษร</span>
+        <span>Ctrl + Enter เพื่อแปล</span>
+      </div>
+    </section>
+
+    <section class="pane" id="outPane">
+      <div class="pane-head">
+        <b id="outTitle">คำแปล</b>
+        <div class="tools">
+          <span class="tag" id="exampleTag">ตัวอย่าง</span>
+          <button type="button" id="speak">ฟังเสียง</button>
+          <button type="button" id="copy">คัดลอก</button>
+        </div>
+      </div>
+      <div class="out" id="output" aria-live="polite">Dear Mr. Tanaka,
+
+Thank you for taking the time to meet with us yesterday. We will send you the revised quotation by this Friday. If you have any further questions, please feel free to contact us at any time.</div>
+      <div class="reading" id="reading" hidden>
+        <div class="reading-head"><b>คำอ่าน</b><button type="button" id="copyRead" class="tools">คัดลอกคำอ่าน</button></div>
+        <div id="readList" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div class="foot">
+        <span id="outMeta">ตัวอย่างผลแปล ไทย → อังกฤษ โทนอีเมล/ธุรกิจ</span>
+        <span class="out-foot-go">
+          <button type="button" class="stop" id="stop">หยุด</button>
+          <button type="button" class="primary" id="go">แปล</button>
+        </span>
+      </div>
+    </section>
+  </div>
+
+  <section class="notes" id="notes">
+    <h2>หมายเหตุผู้แปล</h2>
+    <div class="detected" id="detected">ตรวจพบภาษา: ไทย (ตัวอย่าง)</div>
+    <ul id="noteList">
+      <li>“ใบเสนอราคา” ใช้ quotation ซึ่งเป็นคำมาตรฐานในงานจัดซื้อ ถ้าเป็นงานบริการอาจใช้ proposal</li>
+      <li>คำลงท้าย “ค่ะ” ไม่มีคำตรงในภาษาอังกฤษ จึงใช้ please ให้สุภาพแทน</li>
+    </ul>
+  </section>
+
+  <details class="install" id="install">
+    <summary>ติดตั้งเป็นแอปบนมือถือ</summary>
+    <div class="install-body">
+      <div>
+        <b>iPhone (Safari)</b>
+        <ol><li>เปิดลิงก์เว็บของแอปนี้ใน Safari</li><li>กดปุ่มแชร์ (สี่เหลี่ยมมีลูกศรชี้ขึ้น)</li><li>เลือก “เพิ่มไปยังหน้าจอโฮม” แล้วกด “เพิ่ม”</li><li>เปิดแอปจากไอคอน แล้ววางคีย์ Gemini ในตั้งค่าอีกครั้ง (ไอคอนบนหน้าจอโฮมเก็บค่าแยกจาก Safari)</li></ol>
+      </div>
+      <div>
+        <b>คอมพิวเตอร์ (Chrome / Edge)</b>
+        <ol><li>เปิดลิงก์เว็บของแอปนี้</li><li>กดไอคอนติดตั้งท้ายช่องที่อยู่เว็บ หรือเมนู ⋮ → “ติดตั้งแอป”</li><li>แอปจะอยู่ในเมนู Start เหมือนโปรแกรมทั่วไป</li></ol>
+      </div>
+    </div>
+    <p class="empty">ปุ่ม “ถ่ายรูป” บนมือถือจะเปิดกล้องให้เลย ปุ่ม “ฟังเสียง” ใช้เสียงอ่านของเครื่อง ไม่เสียโควต้า</p>
+  </details>
+
+  <section class="history">
+    <div class="history-head"><h2>ประวัติการแปล</h2><button type="button" id="clearHist" class="tools">ล้างประวัติ</button></div>
+    <div class="hist-list" id="histList"><div class="empty">ยังไม่มีประวัติ ประวัติจะเก็บไว้ในเบราว์เซอร์นี้เท่านั้น</div></div>
+  </section>
+</div>
+
+<script>
+const LANGS = [
+  ["th","ไทย","Thai"],["en","อังกฤษ","English"],["zh-CN","จีน (ตัวย่อ)","Simplified Chinese"],["zh-TW","จีน (ตัวเต็ม)","Traditional Chinese"],
+  ["ja","ญี่ปุ่น","Japanese"],["ko","เกาหลี","Korean"],["vi","เวียดนาม","Vietnamese"],["lo","ลาว","Lao"],["km","เขมร","Khmer"],
+  ["my","พม่า","Burmese"],["ms","มลายู","Malay"],["id","อินโดนีเซีย","Indonesian"],["tl","ฟิลิปปินส์","Filipino"],["hi","ฮินดี","Hindi"],
+  ["ar","อาหรับ","Arabic"],["fr","ฝรั่งเศส","French"],["de","เยอรมัน","German"],["es","สเปน","Spanish"],["pt","โปรตุเกส","Portuguese"],
+  ["it","อิตาลี","Italian"],["ru","รัสเซีย","Russian"],["nl","ดัตช์","Dutch"],["tr","ตุรกี","Turkish"],["pl","โปแลนด์","Polish"],
+  ["sv","สวีเดน","Swedish"],["uk","ยูเครน","Ukrainian"],["he","ฮีบรู","Hebrew"],["bn","เบงกาลี","Bengali"],["ta","ทมิฬ","Tamil"],["ur","อูรดู","Urdu"]
+];
+const TONES = {
+  natural:"natural and fluent, as a native speaker would write it",
+  formal:"formal and polite, suitable for official documents",
+  business:"professional business/email register, courteous and concise",
+  casual:"casual and friendly, like chatting with a friend",
+  literal:"as literal and faithful to the source wording as possible while staying grammatical"
+};
+const $ = id => document.getElementById(id);
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v) }catch{ return d } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch{} }
+};
+const nameOf = code => code==="auto" ? "ตรวจหาอัตโนมัติ" : (LANGS.find(l=>l[0]===code)||[,code])[1];
+const engOf = code => (LANGS.find(l=>l[0]===code)||[,,code])[2];
+
+function fillLangs(){
+  const src=$("src"), tgt=$("tgt");
+  src.add(new Option("ตรวจหาภาษาอัตโนมัติ","auto"));
+  for(const [c,t] of LANGS){ src.add(new Option(t,c)); tgt.add(new Option(t,c)); }
+  const p = store.get("prefs",{});
+  src.value = p.src || "auto"; tgt.value = p.tgt || "en";
+  $("tone").value = p.tone || "business"; $("readOn").checked = p.read !== false; $("speed").value = p.speed || "fast"; $("live").checked = !!p.live;
+}
+function savePrefs(){ store.set("prefs",{src:$("src").value,tgt:$("tgt").value,tone:$("tone").value,read:$("readOn").checked,speed:$("speed").value,live:$("live").checked,model:$("model").value||store.get("prefs",{}).model}) }
+
+// ---- Gemini (Google AI Studio free tier) ----
+const API = "https://generativelanguage.googleapis.com/v1beta";
+const getKey = () => store.get("gkey","");
+function fileToB64(f){
+  return new Promise((ok,bad)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(",")[1]); r.onerror=bad; r.readAsDataURL(f); });
+}
+// shrink big photos so they upload fast on mobile data
+async function shrinkImage(f){
+  try{
+    const bmp = await createImageBitmap(f);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    if(scale === 1 && f.size < 1.5e6) return f;
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width*scale); c.height = Math.round(bmp.height*scale);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(ok => c.toBlob(b => ok(b||f), "image/jpeg", 0.88));
+  }catch{ return f }
+}
+async function geminiOnce(model, prompt, image, onText, signal){
+  const key = getKey();
+  if(!key) throw {code:"no_key"};
+  if(!model) throw {code:"no_model"};
+  const parts = [{text:prompt}];
+  if(image){ const b = await shrinkImage(image); parts.push({inline_data:{mime_type:b.type||"image/jpeg", data:await fileToB64(b)}}); }
+  // Fast mode: skip the model's hidden "thinking" step, which is most of the wait.
+  // 2.5 models take thinkingBudget, 3.x models take thinkingLevel; unknown combos are remembered and dropped.
+  const noThinkCfg = () => {
+    if(store.get("deepThink", false) || store.get("noThinkUnsupported",{})[model]) return null;
+    if(/gemini-2\.5/.test(model)) return {thinkingBudget: /pro/.test(model) ? 128 : 0};
+    if(/gemini-[3-9]/.test(model)) return {thinkingLevel: /pro/.test(model) ? "low" : "minimal"};
+    return null;
+  };
+  const send = cfg => fetch(`${API}/${model}:streamGenerateContent?alt=sse`, {
+    method:"POST", signal,
+    headers:{"Content-Type":"application/json","x-goog-api-key":key},
+    body:JSON.stringify({contents:[{role:"user",parts}], generationConfig:Object.assign({temperature:0.2}, cfg ? {thinkingConfig:cfg} : {})})
+  });
+  const cfg = noThinkCfg();
+  let res = await send(cfg);
+  let msg = "";
+  if(!res.ok && res.status === 400 && cfg){
+    try{ msg = (await res.json())?.error?.message || "" }catch{}
+    if(/think/i.test(msg)){
+      const u = store.get("noThinkUnsupported",{}); u[model] = true; store.set("noThinkUnsupported", u);
+      res = await send(null); msg = "";
+    }
+  }
+  if(!res.ok){
+    if(!msg){ try{ msg = (await res.json())?.error?.message || "" }catch{} }
+    const busy = res.status===503 || res.status===500 || res.status===504 || /overload|high demand|unavailable/i.test(msg);
+    throw {code: busy ? "busy" : res.status===429 ? "rate_limited" : (res.status===400||res.status===403) && /key/i.test(msg) ? "bad_key" : "http", status:res.status, message:msg};
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", text = "", blocked = null;
+  for(;;){
+    const {done, value} = await reader.read(); if(done) break;
+    buf += dec.decode(value, {stream:true});
+    let i;
+    while((i = buf.indexOf("\n")) >= 0){
+      const line = buf.slice(0,i).trim(); buf = buf.slice(i+1);
+      if(!line.startsWith("data:")) continue;
+      try{
+        const j = JSON.parse(line.slice(5));
+        const t = (j.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
+        if(t){ text += t; onText?.(text); }
+        if(j.promptFeedback?.blockReason) blocked = j.promptFeedback.blockReason;
+      }catch{}
+    }
+  }
+  if(!text) throw {code: blocked ? "refused" : "empty_completion"};
+  return {text, model};
+}
+// Hedged requests: start the chosen model; if no text arrives within HEDGE_MS (or it fails as busy),
+// start the next model in parallel. The first model to stream text wins and the others are cancelled.
+const HEDGE_MS = 2500;
+let lastAttempts = [];
+async function gemini(prompt, image, onText, signal){
+  const chosen = pickModel();
+  if(!getKey()) throw {code:"no_key"};
+  if(!chosen) throw {code:"no_model"};
+  const all = [...$("model").options].map(o => o.value).filter(Boolean);
+  const score = m => (/flash/.test(m) ? 0 : 2) + (/preview|exp/.test(m) ? 1 : 0) + (/pro/.test(m) ? 3 : 0);
+  const others = all.filter(m => m !== chosen).sort((a,b) => score(a) - score(b));
+  const tries = [chosen, ...others].slice(0, 4);
+  const t0 = performance.now();
+  lastAttempts = [];
+  return new Promise((resolve, reject) => {
+    let winner = -1, started = 0, finished = 0, lastErr = null, timer = null;
+    const ctls = [];
+    const tick = setInterval(() => {
+      if(winner >= 0) return clearInterval(tick);
+      const secs = Math.round((performance.now()-t0)/1000);
+      $("outMeta").textContent = `รอ Google ตอบ ${secs} วิ · กำลังลอง ${lastAttempts.map(a => nameOfModel(a.model)).join(", ")}`;
+      if(secs >= 25){ // nothing at all after 25 s: give up instead of hanging
+        clearInterval(tick); ctls.forEach(c => c.abort()); clearTimeout(timer);
+        reject({code:"timeout"});
+      }
+    }, 1000);
+    const onAbort = () => { clearInterval(tick); ctls.forEach(c => c.abort()); clearTimeout(timer); };
+    signal?.addEventListener("abort", onAbort, {once:true});
+    const launchNext = () => {
+      clearTimeout(timer);
+      if(winner >= 0 || started >= tries.length || signal?.aborted) return;
+      const i = started++, m = tries[i], c = new AbortController(); ctls[i] = c;
+      const rec = {model:m, start:Math.round(performance.now()-t0)}; lastAttempts.push(rec);
+      if(i > 0 && winner < 0) $("outMeta").textContent = "ลองรุ่นสำรอง " + nameOfModel(m) + " คู่กันไปด้วย…";
+      geminiOnce(m, prompt, image, t => {
+        if(winner < 0){
+          winner = i; rec.first = Math.round(performance.now()-t0);
+          ctls.forEach((x, k) => { if(k !== i) x?.abort(); }); clearTimeout(timer);
+        }
+        if(winner === i) onText?.(t);
+      }, c.signal).then(r => {
+        finished++;
+        if(winner === i){ clearInterval(tick); signal?.removeEventListener("abort", onAbort); resolve(r); }
+      }, e => {
+        finished++; rec.err = e?.code || e?.name;
+        if(winner === i){ clearInterval(tick); signal?.removeEventListener("abort", onAbort); return reject(e); }
+        if(e?.name === "AbortError"){ if(signal?.aborted && finished >= started) reject(e); return; }
+        lastErr = e;
+        if(!["busy","rate_limited","empty_completion"].includes(e?.code) && winner < 0 && started === 1 && i === 0){
+          // a real error (bad key, bad request) — no point trying other models
+          ctls.forEach(x => x?.abort()); return reject(e);
+        }
+        if(winner < 0 && started < tries.length) launchNext();
+        else if(winner < 0 && finished >= started) reject(lastErr);
+      });
+      timer = setTimeout(launchNext, HEDGE_MS);
+    };
+    launchNext();
+  });
+}
+function pickModel(){
+  const all = [...$("model").options].map(o => o.value).filter(Boolean);
+  if($("speed").value === "fast"){
+    const lite = all.filter(m => /flash-lite/.test(m));
+    return lite.find(m => !/preview|exp/.test(m)) || lite[0] || $("model").value;
+  }
+  return $("model").value;
+}
+const nameOfModel = m => ([...$("model").options].find(o => o.value === m)?.text || m.replace("models/","")).split(" · ")[0];
+async function loadModels(){
+  const key = getKey(), sel = $("model");
+  if(!key){ sel.replaceChildren(new Option("บันทึกคีย์ก่อน แล้วรายชื่อโมเดลจะขึ้นเอง","")); return false; }
+  sel.replaceChildren(new Option("กำลังโหลดรายชื่อโมเดล…",""));
+  try{
+    const res = await fetch(`${API}/models?pageSize=200`, {headers:{"x-goog-api-key":key}});
+    const j = await res.json();
+    if(!res.ok) throw new Error(j?.error?.message || res.status);
+    const ms = (j.models||[]).filter(m => m.supportedGenerationMethods?.includes("generateContent")
+      && /^models\/gemini/.test(m.name) && !/(embed|tts|image|audio|live|aqa|robotics|computer)/i.test(m.name));
+    // prefer stable flash models: accurate, fast, generous free quota
+    const rank = m => (/flash/.test(m.name)?0:/pro/.test(m.name)?1:2) + (/preview|exp/.test(m.name)?0.5:0) + (/lite/.test(m.name)?0.3:0);
+    const ver = m => parseFloat((m.name.match(/gemini-(\d+(\.\d+)?)/)||[,0])[1]);
+    ms.sort((a,b) => ver(b)-ver(a) || rank(a)-rank(b));
+    sel.replaceChildren();
+    for(const m of ms){
+      const tag = /pro/.test(m.name) ? " · แม่นสุด (โควต้าฟรีน้อย)" : /lite/.test(m.name) ? " · เร็วสุด" : /flash/.test(m.name) ? " · แนะนำ" : "";
+      sel.add(new Option((m.displayName||m.name.slice(7)) + tag, m.name));
+    }
+    const saved = store.get("prefs",{}).model;
+    const best = ms.find(m => /flash/.test(m.name) && !/lite|preview|exp/.test(m.name)) || ms[0];
+    sel.value = ms.some(m=>m.name===saved) ? saved : (best?.name || "");
+    $("keyState").textContent = `คีย์ใช้งานได้ · พบ ${ms.length} โมเดล · คีย์เก็บไว้ในเครื่องนี้เท่านั้น`;
+    return true;
+  }catch(e){
+    sel.replaceChildren(new Option("โหลดรายชื่อไม่ได้ ตรวจคีย์อีกครั้ง",""));
+    $("keyState").textContent = "คีย์ใช้ไม่ได้: " + (e.message||e);
+    return false;
+  }
+}
+function refreshStatus(){
+  const ok = !!getKey() && !!$("model").value;
+  $("status").textContent = ok ? "พร้อมแปล · ใช้โควต้าฟรีของ Gemini" : "ยังไม่ได้ใส่คีย์ Gemini เปิด “ตั้งค่า” ด้านบน";
+  if(!ok) $("settings").open = true;
+}
+
+// ---- speech (device voice, free) ----
+function speak(text, lang){
+  try{
+    if(!("speechSynthesis" in window) || !text) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang; const v = speechSynthesis.getVoices().find(v => v.lang.replace("_","-").toLowerCase().startsWith(lang.toLowerCase().split("-")[0]) && (lang.length<3 || v.lang.replace("_","-").toLowerCase()===lang.toLowerCase())) || speechSynthesis.getVoices().find(v => v.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));
+    if(v) u.voice = v;
+    u.rate = 0.9; speechSynthesis.speak(u);
+  }catch{}
+}
+
+function updateCount(){ $("count").textContent = $("input").value.length.toLocaleString() + " ตัวอักษร" }
+
+let imgFile = null, ctl = null, lastDetected = null;
+
+function buildPrompt(text){
+  const src = $("src").value, tgt = $("tgt").value, ctx = $("ctx").value.trim();
+  const tone = TONES[$("tone").value], T = engOf(tgt);
+  const srcLine = src==="auto" ? "Detect the source language yourself." : `The source language is ${engOf(src)}.`;
+  return `You are a professional translator. Your job: translate the SOURCE TEXT into ${T}.
+${srcLine}
+The translation MUST be written in ${T}. Never copy the source text back unchanged${src!==tgt ? ` unless it is already ${T}` : ""}.
+Tone/register: ${tone}.
+${ctx ? "Context from the user (use it to choose terminology): " + ctx : ""}
+Rules:
+- Preserve meaning, nuance, names, numbers, dates, units, line breaks and formatting.
+- Do not add explanations inside the translation. Keep proper nouns as-is.
+${imgFile ? "- The source text is in the attached image. Read all visible text and translate it, keeping the layout order." : ""}
+
+SOURCE TEXT:
+"""
+${text || "(see image)"}
+"""
+
+Now reply in exactly this format:
+<the ${T} translation only>
+${wantReading() ? `===READING===
+For EVERY sentence of the ${T} translation, in order, one block (blank line between blocks):
+ZH: <that ${T} sentence exactly as in the translation>
+${ROM[tgt] ? `PY: <${ROM[tgt][0]}>\n` : ""}TH: <how a Thai speaker reads that ${T} sentence aloud, written in Thai script with tone marks; e.g. English "Thank you very much" -> แธงค์ ยู เวรี่ มัช, Chinese 谢谢你 -> เซี่ยเซี่ย หนี่>
+` : ""}===NOTES===
+DETECTED: <source language name in Thai, e.g. ญี่ปุ่น>
+- <0 to 3 short notes IN THAI about ambiguous words or alternative wordings. If nothing important, write "- ไม่มี">`;
+}
+
+// Did the model actually answer in the target language? (catches the fast model echoing the source)
+const SCRIPT = {th:/[฀-๿]/g, lo:/[຀-໿]/g, km:/[ក-៿]/g, my:/[က-႟]/g,
+  zh:/[一-鿿]/g, ja:/[぀-ヿ一-鿿]/g, ko:/[가-힯]/g, ar:/[؀-ۿ]/g, ur:/[؀-ۿ]/g,
+  he:/[֐-׿]/g, ru:/[Ѐ-ӿ]/g, uk:/[Ѐ-ӿ]/g, hi:/[ऀ-ॿ]/g, bn:/[ঀ-৿]/g, ta:/[஀-௿]/g};
+function looksWrongLanguage(src, tr, tgt){
+  const letters = s => (s.match(/\p{L}/gu) || []).length || 1;
+  const share = (s, re) => (s.match(re) || []).length / letters(s);
+  if(!tr.trim()) return true;
+  if(tr.trim() === src.trim() && src.trim().length > 3) return true;
+  const key = tgt.startsWith("zh") ? "zh" : tgt;
+  if(SCRIPT[key]) return share(tr, SCRIPT[key]) < 0.3;          // target has its own script: most letters must be in it
+  return share(tr, /[^\p{Script=Latin}\d\s\p{P}]/gu) > 0.5;       // Latin-script target: mostly Latin letters
+}
+
+// romanization for non-Latin scripts: [instruction for Claude, label shown in the app]
+const ROM = {
+  "zh-CN":["Hanyu Pinyin with tone marks, words spaced, e.g. xièxie nǐ","พินอิน"],
+  "zh-TW":["Hanyu Pinyin with tone marks, words spaced, e.g. xièxie nǐ","พินอิน"],
+  ja:["Hepburn romaji, e.g. arigatou gozaimasu","โรมาจิ"],
+  ko:["Revised Romanization of Korean, e.g. gamsahamnida","โรมัน"],
+  ru:["Latin transliteration","โรมัน"], uk:["Latin transliteration","โรมัน"],
+  ar:["Latin transliteration","โรมัน"], he:["Latin transliteration","โรมัน"],
+  hi:["Latin transliteration (IAST-like, simple)","โรมัน"], bn:["Latin transliteration","โรมัน"],
+  ta:["Latin transliteration","โรมัน"], ur:["Latin transliteration","โรมัน"],
+  lo:["Latin transliteration","โรมัน"], km:["Latin transliteration","โรมัน"], my:["Latin transliteration","โรมัน"]
+};
+function wantReading(){ return $("tgt").value !== "th" && $("readOn").checked }
+function syncReadToggle(){
+  const t = $("tgt").value;
+  $("readWrap").hidden = t === "th";
+  $("readLbl").textContent = ROM[t] ? `คำอ่าน (${ROM[t][1]} + ไทย)` : "คำอ่านภาษาไทย";
+}
+
+function splitOut(full){
+  const r = full.indexOf("===READING==="), n = full.indexOf("===NOTES===");
+  const cut = [r,n].filter(i=>i>=0);
+  const trEnd = cut.length ? Math.min(...cut) : full.length;
+  const reading = r>=0 ? full.slice(r+13, n>r ? n : full.length).trim() : null;
+  const notes = n>=0 ? full.slice(n+11).trim() : null;
+  return {tr:full.slice(0,trEnd).trim(), reading, notes};
+}
+function parseReading(txt){
+  const blocks = []; let cur = null;
+  for(const raw of (txt||"").split("\n")){
+    const m = raw.trim().match(/^(ZH|PY|TH)\s*[:：]\s*(.*)$/i);
+    if(!m) continue;
+    const k = m[1].toUpperCase();
+    if(k==="ZH" || !cur){ cur = {zh:"",py:"",th:""}; blocks.push(cur); }
+    cur[k.toLowerCase()] = m[2].trim();
+  }
+  return blocks.filter(b=>b.zh||b.py||b.th);
+}
+function renderReading(blocks, tgt){
+  tgt = tgt || $("tgt").value;
+  const box = $("reading"), list = $("readList"); list.replaceChildren();
+  box.hidden = !blocks || !blocks.length;
+  if(box.hidden) return;
+  for(const b of blocks){
+    const d = document.createElement("div"); d.className="rd";
+    for(const [k,cls,label] of [["zh","zh",nameOf(tgt)],["py","py",ROM[tgt]?.[1]||"โรมัน"],["th","thr","อ่านว่า"]]){
+      if(!b[k]) continue;
+      const l=document.createElement("span"); l.className="k"; l.textContent=label;
+      const v=document.createElement("span"); v.className=cls;
+      if(k==="zh"){
+        const t=document.createElement("span"); t.textContent=b[k];
+        const s=document.createElement("button"); s.type="button"; s.className="spk"; s.textContent="ฟัง"; s.title="ฟังเสียงประโยคนี้";
+        s.onclick=()=>speak(b.zh, tgt); v.append(t,s);
+      } else v.textContent=b[k];
+      d.append(l,v);
+    }
+    list.append(d);
+  }
+}
+let lastReading = [];
+function renderNotes(notesText){
+  const list = $("noteList"); list.replaceChildren();
+  let detected = null;
+  for(const raw of (notesText||"").split("\n")){
+    const line = raw.trim(); if(!line) continue;
+    const m = line.match(/^DETECTED:\s*(.+)$/i);
+    if(m){ detected = m[1].trim(); continue; }
+    const t = line.replace(/^[-•*]\s*/,"");
+    if(!t || t==="ไม่มี") continue;
+    const li = document.createElement("li"); li.textContent = t; list.append(li);
+  }
+  $("detected").textContent = detected ? "ตรวจพบภาษา: " + detected : "";
+  lastDetected = detected;
+  if(!list.children.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="ไม่มีจุดที่ต้องระวัง"; list.append(li); }
+}
+
+const ERR = {
+  no_key:"ยังไม่ได้ใส่คีย์ Gemini เปิด “ตั้งค่า” ด้านบนแล้ววางคีย์",
+  no_model:"ยังไม่ได้เลือกโมเดล เปิด “ตั้งค่า” แล้วกด โหลดรายชื่อใหม่",
+  bad_key:"คีย์ Gemini ใช้ไม่ได้ ตรวจว่าคัดลอกมาครบ แล้วบันทึกใหม่",
+  rate_limited:"ใช้โควต้าฟรีเต็มแล้ว (ต่อนาทีหรือต่อวัน) รอสักครู่ หรือเปลี่ยนเป็นรุ่น Flash-Lite ในตั้งค่า",
+  refused:"Gemini ไม่ยอมแปลข้อความนี้ ลองปรับถ้อยคำแล้วแปลใหม่",
+  empty_completion:"ไม่ได้ผลลัพธ์ ลองแปลใหม่อีกครั้ง",
+  timeout:"รอ 25 วินาทีแล้ว Google ยังไม่ตอบเลย อาจเป็นเพราะเน็ตบริษัทกั้นไว้ หรือ Gemini คนใช้เยอะ ลองใช้เน็ตมือถือ (ฮอตสปอต) เทียบดู",
+  busy:"ตอนนี้ Gemini ทุกรุ่นคนใช้เยอะ รอ 1-2 นาทีแล้วกดแปลอีกครั้ง",
+  http:"Google ตอบกลับผิดพลาด ลองอีกครั้ง หรือเปลี่ยนโมเดลในตั้งค่า",
+  upstream_error:"เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วกดแปลอีกครั้ง"
+};
+
+async function translate(){
+  const text = $("input").value.trim();
+  if(!text && !imgFile){ $("output").textContent="พิมพ์หรือวางข้อความที่ต้องการแปลก่อน"; $("output").className="out placeholder"; return; }
+  savePrefs();
+  ctl?.abort(); ctl = new AbortController();
+  const out = $("output"), app = $("app");
+  $("exampleTag").hidden = true;
+  out.className = "out placeholder thinking"; out.textContent = "กำลังแปล";
+  $("go").disabled = true; app.classList.add("busy");
+  $("outMeta").textContent = `${nameOf($("src").value)} → ${nameOf($("tgt").value)} · ${$("tone").selectedOptions[0].text.replace("โทน: ","")}`;
+  renderReading([]);
+  $("noteList").replaceChildren(); $("detected").textContent = "";
+  const prompt = buildPrompt(text);
+  const ckey = imgFile ? null : $("speed").value + "|" + prompt;
+  const cache = store.get("tcache", {});
+  if(ckey && cache[ckey]){
+    const c = cache[ckey];
+    out.className="out"; out.textContent = c.tr;
+    lastReading = c.r || []; renderReading(lastReading); renderNotes(c.n);
+    $("outMeta").textContent = `${nameOf($("src").value)} → ${nameOf($("tgt").value)} · จากความจำ ขึ้นทันที`;
+    lastDone = text; $("go").disabled = false; app.classList.remove("busy"); return;
+  }
+  const t0 = performance.now(); let tFirst = 0;
+  let partial = "";
+  const onText = t => { if(!tFirst) tFirst = performance.now(); partial = t; const p = splitOut(t); out.className="out"; out.textContent = p.tr; if(p.reading) renderReading(parseReading(p.reading)); };
+  try{
+    let res = await gemini(prompt, imgFile, onText, ctl.signal);
+    if(text && $("tgt").value !== $("src").value && looksWrongLanguage(text, splitOut(res.text).tr, $("tgt").value) && $("speed").value === "fast"){
+      // fast model echoed the source: redo once with the more accurate model
+      out.className = "out placeholder thinking"; out.textContent = "รุ่นเร็วแปลไม่สำเร็จ กำลังแปลใหม่ด้วยรุ่นแม่นยำ";
+      const keep = $("speed").value; $("speed").value = "balanced";
+      try{ res = await gemini(prompt, imgFile, onText, ctl.signal); } finally { $("speed").value = keep; }
+    }
+    const {tr, reading, notes} = splitOut(res.text);
+    out.className="out"; out.textContent = tr;
+    lastReading = parseReading(reading); renderReading(lastReading);
+    renderNotes(notes);
+    const sec = ms => (ms/1000).toFixed(1);
+    $("outMeta").textContent = `${nameOf($("src").value)} → ${nameOf($("tgt").value)} · ${nameOfModel(res.model)} · เริ่มขึ้นใน ${sec(tFirst-t0)} วิ เสร็จใน ${sec(performance.now()-t0)} วิ`;
+    if(lastAttempts.length > 1) $("outMeta").textContent += ` · ลองพร้อมกัน ${lastAttempts.length} รุ่น`;
+    lastDone = text;
+    if(ckey){
+      cache[ckey] = {tr, r:lastReading, n:notes};
+      const ks = Object.keys(cache); for(const k of ks.slice(0, Math.max(0, ks.length-150))) delete cache[k];
+      store.set("tcache", cache);
+    }
+    addHistory(text || "(ข้อความจากรูป)", tr);
+  }catch(e){
+    out.className = "out"; out.textContent = partial ? splitOut(partial).tr : "";
+    if(e?.name !== "AbortError"){
+      const code = e?.code || "upstream_error";
+      const p = document.createElement("div"); p.className="err"; p.textContent = ERR[code] || ERR.upstream_error;
+      if(code==="http" && e.message) p.textContent += " (" + e.message.slice(0,160) + ")";
+      if(lastAttempts.length) p.textContent += " · รุ่นที่ลอง: " + lastAttempts.map(a => nameOfModel(a.model) + (a.err ? " (" + a.err + ")" : "")).join(", ");
+      out.append(document.createElement("br"), p);
+      if(["no_key","no_model","bad_key"].includes(code)) $("settings").open = true;
+    }
+  }finally{
+    $("go").disabled = false; app.classList.remove("busy");
+  }
+}
+
+function addHistory(src, tr){
+  const h = store.get("hist",[]);
+  h.unshift({s:src.slice(0,2000), t:tr.slice(0,4000), r:lastReading.slice(0,40), a:$("src").value, b:$("tgt").value, at:Date.now()});
+  store.set("hist", h.slice(0,30)); renderHistory();
+}
+function renderHistory(){
+  const h = store.get("hist",[]), list = $("histList"); list.replaceChildren();
+  if(!h.length){ const d=document.createElement("div"); d.className="empty"; d.textContent="ยังไม่มีประวัติ ประวัติจะเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"; list.append(d); return; }
+  for(const it of h){
+    const b = document.createElement("button"); b.type="button"; b.className="hist";
+    const pair = document.createElement("span"); pair.className="pair"; pair.textContent = `${it.a==="auto"?"อัตโนมัติ":nameOf(it.a)} → ${nameOf(it.b)}`;
+    const txt = document.createElement("span"); txt.className="txt"; txt.textContent = it.s.replace(/\s+/g," ");
+    b.append(pair, txt);
+    b.onclick = () => {
+      $("input").value = it.s; $("src").value = it.a; $("tgt").value = it.b;
+      $("output").className="out"; $("output").textContent = it.t; $("exampleTag").hidden = true;
+      $("outMeta").textContent = "จากประวัติ"; renderReading(it.r || [], it.b); syncReadToggle(); updateCount(); window.scrollTo({top:0,behavior:"smooth"});
+    };
+    list.append(b);
+  }
+}
+
+
+// events
+$("go").onclick = translate;
+$("stop").onclick = () => ctl?.abort();
+$("input").addEventListener("input", updateCount);
+let liveTimer = null, lastDone = "";
+$("input").addEventListener("input", () => {
+  clearTimeout(liveTimer);
+  if(!$("live").checked || imgFile) return;
+  liveTimer = setTimeout(() => {
+    const t = $("input").value.trim();
+    if(t.length > 1 && t !== lastDone && getKey()) translate();
+  }, 900);
+});
+$("input").addEventListener("keydown", e => { if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); translate(); } });
+$("swap").onclick = () => {
+  const s=$("src"), t=$("tgt"), out=$("output").textContent.trim();
+  let newTgt = s.value==="auto" ? (LANGS.find(l=>l[1]===lastDetected)?.[0] || "th") : s.value;
+  s.value = t.value; t.value = newTgt;
+  if(out && !$("output").classList.contains("placeholder")){ $("input").value = out; updateCount(); }
+  syncReadToggle(); renderReading([]); savePrefs();
+};
+for(const id of ["src","tgt","tone","readOn","model","speed","live"]) $(id).addEventListener("change", savePrefs);
+$("tgt").addEventListener("change", syncReadToggle);
+$("copyRead").onclick = async () => {
+  const txt = [...$("readList").children].map(d => [...d.querySelectorAll(".zh,.py,.thr")].map(e=>e.textContent).join("\n")).join("\n\n");
+  try{ await navigator.clipboard.writeText(txt); $("copyRead").textContent="คัดลอกแล้ว"; }
+  catch{ const r=document.createRange(); r.selectNodeContents($("readList")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $("copyRead").textContent="เลือกแล้ว กด Ctrl+C"; }
+  setTimeout(()=>{$("copyRead").textContent="คัดลอกคำอ่าน"},1800);
+};
+$("clear").onclick = () => { $("input").value=""; updateCount(); clearImg(); $("input").focus(); };
+$("copy").onclick = async () => {
+  const txt = $("output").textContent;
+  try{ await navigator.clipboard.writeText(txt); $("copy").textContent="คัดลอกแล้ว"; }
+  catch{ const r=document.createRange(); r.selectNodeContents($("output")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $("copy").textContent="เลือกข้อความแล้ว กด Ctrl+C"; }
+  setTimeout(()=>{$("copy").textContent="คัดลอก"},1800);
+};
+$("clearHist").onclick = () => { store.set("hist",[]); renderHistory(); };
+function setImg(f){
+  if(!f || !f.type.startsWith("image/")) return;
+  imgFile = f; $("imgPrev").src = URL.createObjectURL(f);
+  $("imgName").textContent = (f.name && f.name !== "image.png" ? f.name : "รูปที่วาง") + " · กด แปล ได้เลย";
+  $("imgChip").hidden = false;
+}
+$("imgBtn").onclick = () => $("imgFile").click();
+$("camBtn").onclick = () => $("camFile").click();
+$("imgFile").onchange = e => setImg(e.target.files?.[0]);
+$("camFile").onchange = e => setImg(e.target.files?.[0]);
+document.addEventListener("paste", e => {
+  const f = [...(e.clipboardData?.files || [])].find(x => x.type.startsWith("image/"));
+  if(f){ e.preventDefault(); setImg(f); }
+});
+const srcPane = $("input").closest(".pane");
+srcPane.addEventListener("dragover", e => { e.preventDefault(); srcPane.classList.add("drop"); });
+srcPane.addEventListener("dragleave", () => srcPane.classList.remove("drop"));
+srcPane.addEventListener("drop", e => {
+  e.preventDefault(); srcPane.classList.remove("drop");
+  setImg([...(e.dataTransfer?.files || [])].find(x => x.type.startsWith("image/")));
+});
+function clearImg(){ imgFile=null; $("imgFile").value=""; $("camFile").value=""; $("imgChip").hidden=true; }
+$("imgRemove").onclick = clearImg;
+
+fillLangs(); syncReadToggle(); updateCount(); renderHistory();
+// example reading for the sample shown at load (marked ตัวอย่าง)
+renderReading([
+  {zh:"Dear Mr. Tanaka,", py:"", th:"เดียร์ มิสเตอร์ ทานากะ"},
+  {zh:"Thank you for taking the time to meet with us yesterday.", py:"", th:"แธงค์ ยู ฟอร์ เทคกิ้ง เดอะ ไทม์ ทู มีท วิธ อัส เยสเตอร์เดย์"},
+  {zh:"We will send you the revised quotation by this Friday.", py:"", th:"วี วิล เซนด์ ยู เดอะ รีไวซ์ด โควเทชั่น บาย ดิส ฟรายเดย์"}
+], "en");
+
+$("speak").onclick = () => speak($("output").textContent.trim(), $("tgt").value);
+$("saveKey").onclick = async () => {
+  const k = $("apiKey").value.trim();
+  if(!k){ $("keyState").textContent = "วางคีย์ก่อนแล้วกดบันทึก"; return; }
+  store.set("gkey", k); $("apiKey").value = ""; $("apiKey").placeholder = "บันทึกคีย์แล้ว (วางใหม่เพื่อเปลี่ยน)";
+  const ok = await loadModels(); refreshStatus(); if(ok) $("settings").open = false;
+};
+$("reloadModels").onclick = async () => { await loadModels(); refreshStatus(); };
+$("model").addEventListener("change", refreshStatus);
+$("deepThink").checked = store.get("deepThink", false);
+$("deepThink").addEventListener("change", e => store.set("deepThink", e.target.checked));
+
+(async () => {
+  if(getKey()){ $("apiKey").placeholder = "บันทึกคีย์แล้ว (วางใหม่เพื่อเปลี่ยน)"; await loadModels(); }
+  refreshStatus();
+  if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
